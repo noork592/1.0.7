@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import ItemSearchInput from "@/components/ItemSearchInput";
+import DatePicker from "@/components/DatePicker";
 import { toast } from "sonner";
 import { Save, X, Plus, Trash2 } from "lucide-react";
 
@@ -35,8 +36,12 @@ export default function OrderEditDialog({ open, order, onOpenChange, onSaved }) 
 
   useEffect(() => {
     if (!order) { setForm(null); return; }
+    const od = order.order_date || order.created_at;
+    const orderDate = od ? new Date(new Date(od).getTime() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10) : "";
     setForm({
       customer_id: order.customer_id,
+      order_date: orderDate,
+      original_order_date: orderDate,
       delivery_date: (order.delivery_date || "").slice(0, 10),
       notes: order.notes || "",
       status: order.status || "Pending",
@@ -153,6 +158,8 @@ export default function OrderEditDialog({ open, order, onOpenChange, onSaved }) 
     const body = {
       customer_id: form.customer_id,
       delivery_date: form.delivery_date || null,
+      ...(form.order_date && form.order_date !== form.original_order_date
+        ? { order_date: new Date(form.order_date).toISOString() } : {}),
       notes: form.notes,
       status: form.status,
       items: form.items.map((it) => ({
@@ -181,7 +188,7 @@ export default function OrderEditDialog({ open, order, onOpenChange, onSaved }) 
 
         <div className="space-y-4">
           {/* Customer + Status + Delivery */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <Label className="text-xs font-bold uppercase">{t("common.customer")}</Label>
               <Select value={form.customer_id}
@@ -212,6 +219,17 @@ export default function OrderEditDialog({ open, order, onOpenChange, onSaved }) 
                   {STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`orders.status.${s}`, s)}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label className="text-xs font-bold uppercase">{t("newOrder.orderDate")}</Label>
+              <div className="mt-1">
+                <DatePicker
+                  value={form.order_date}
+                  onChange={(v) => setForm((p) => ({ ...p, order_date: v }))}
+                  testId="edit-order-date"
+                  buttonClassName="h-11 text-sm"
+                />
+              </div>
             </div>
             <div>
               <Label className="text-xs font-bold uppercase">{t("orderEdit.deliveryDate")}</Label>
